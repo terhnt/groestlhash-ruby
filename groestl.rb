@@ -1,15 +1,32 @@
-    def groestl512(str, format, output)
+
+    # Some notes about my conversion... (Which is bad)
+	# i turned this.variable into $variable
+	# some functions have self. before it as they wouldn't compile with out it.
+	# groestl512 i gave it some default values that might be bad, because example code doesnt use the second params
+	# i replaced all >>> with unsignedRightShift(amt, to) but no idea if its a fix or not.
+	# i put keyStr inside the function b64Decode, though it wasn't inside it previously ( might not be an issue )
+	# t0-t7 i changed to lowercase to stop an error relating to making them constants or something.
+	# there is probably multiple '.prototype.' functions i didnt convert properly here
+	# there is code from o.js, helper.js and index.js all smushed into the below.
+	# i++, j++ didnt work in ruby, so mostly turned it to i=i+1.. etc.
+	# there was a for loop with two conditions in a function i turned it to a while loop ( shouldnt matter ) and added i=i+1 and j=j+1 to bottom of the loop.
+	# somethings wouldnt work unless i put @ infront of them, not sure if this breaks anything ( i.e @input in b64Decode )
+	# there was a groestl in index.js and one in the lib/index.js i renamed one to groestlx
+	# there is probably other issues with this code, but hopefully this information helps if someone tries to use this / fix it.
+	# Good luck fixing this - may be easier to start from scratch if you are profficient in ruby :P
+    
+    def groestl512(str, format = "", output = 2)
 	   groestl(str, format, output)
     end
 	
-    def unsignedRightShift(amt, val)
+    def self.unsignedRightShift(amt, val)
       mask = (1 << (32 - amt)) - 1
       return (val >> amt) & mask
     end
 	
-    def u64(h,l)
-      this.hi = unsignedRightShift(h,0)
-      this.lo = unsignedRightShift(l,0)
+    def self.u64(h,l)
+      $hi = unsignedRightShift(h,0)
+      $lo = unsignedRightShift(l,0)
     end
 	
     def int32Buffer2Bytes(b)
@@ -21,7 +38,7 @@
 		buffer[i * 4 + 1] = unsignedRightShift((b[i] & 0x00FF0000),16)
 		buffer[i * 4 + 2] = unsignedRightShift((b[i] & 0x0000FF00),8)
 		buffer[i * 4 + 3] = (b[i] & 0x000000FF)
-		i++
+		i = i+1
 	  end
 	  
 	end
@@ -44,7 +61,7 @@
 	  return string.to_s
 	end
   
-    def bytes2Int64Buffer(b)
+    def self.bytes2Int64Buffer(b)
       if (!b)
         return []
       end
@@ -54,22 +71,23 @@
       j = 0
       while j < len
         buffer[j] = u64((b[j * 8] << 24) | (b[j * 8 + 1] << 16) | (b[j * 8 + 2] << 8) | b[j * 8 + 3], (b[j * 8 + 4] << 24) | (b[j * 8 + 5] << 16) | (b[j * 8 + 6] << 8) | b[j * 8 + 7])
-        j++
+        j = j+1
       end
       return buffer
     end
   
-    def b64Decode(input)
+    def self.b64Decode(input)
+	  keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
       output = []
       i = 0
     
-      input = input.gsub! (/[^A-Za-z0-9\+\/\=]/, "")
+      @input = input.gsub! /[^A-Za-z0-9\+\/\=]/, ""
       
-      while i < input.length
-        enc1 = keyStr.index(input[i+1].chr)
-        enc2 = keyStr.index(input[i+1].chr)
-        enc3 = keyStr.index(input[i+1].chr)
-        enc4 = keyStr.index(input[i+1].chr)
+      while i < input.length-4
+        enc1 = keyStr.index(input[i=i+1])
+        enc2 = keyStr.index(input[i=i+1])
+        enc3 = keyStr.index(input[i=i+1])
+        enc4 = keyStr.index(input[i=i+1])
   
   
         chr1 = (enc1 << 2) | (enc2 >> 4)
@@ -94,16 +112,16 @@
       i = 0
       while i < len
         buffer[i + bufferOffset] = data[i + dataOffset]
-        i++
+        i = i+1
       end
     end
   
     def addOne()
       if (this.lo === -1 || this.lo === 0xFFFFFFFF)
         this.lo = 0
-        this.hi++
+        this.hi = this.hi+1
       else
-        this.lo++
+        this.lo = this.lo+1
       end
     end
     
@@ -1250,12 +1268,12 @@
       m = Array.new(16)
       for r in 0..13 do
         g[i].setxor64(j64[i].plus(r64[r]).setShiftLeft(56))
-        r++
+        r = r+1
       end
       
       for u in 0..15 do
         t[u] = xor64(t0[B64(0, g[u])], t1[B64(1, g[(u + 1) & 0xF])], t2[B64(2, g[(u + 2) & 0xF])], t3[B64(3, g[(u + 3) & 0xF])], t4[B64(4, g[(u + 4) & 0xF])], t5[B64(5, g[(u + 5) & 0xF])], t6[B64(6, g[(u + 6) & 0xF])], t7[B64(7, g[(u + 11) & 0xF])])
-        u++
+        u = u + 1
       end
     
       temp = g
@@ -1265,19 +1283,259 @@
       for r in 0..14 do
         for i in 0..15 do
             m[i].setxor64(r64[r], nj64[i])
-          i++
+          i = i + 1
         end
         for u in 0..15 do
           t[u] = xor64(t0[B64(0, m[(u + 1) & 0xF])], t1[B64(1, m[(u + 3) & 0xF])], t2[B64(2, m[(u + 5) & 0xF])], t3[B64(3, m[(u + 11) & 0xF])], t4[B64(4, m[(u + 0) & 0xF])], t5[B64(5, m[(u + 2) & 0xF])], t6[B64(6, m[(u + 4) & 0xF])], t7[B64(7, m[(u + 6) & 0xF])])
-          u++
+          u = u + 1
         end
         temp = m
         m = t
         t = temp
-        r++
+        r = r + 1
       end
       for u in 0..15 do
         state[u].setxor64(g[u], m[u])
       end
     end
-  	 	
+	
+	#Keccak.prototype.buffer = function() < Original function... no idea how to do prototype.function in ruby :(
+    def buffer
+      finalize
+      blockCount = $blockCount
+      s = $s
+      outputBlocks = $outputBlocks
+      extraBytes = $extraBytes
+      i = 0
+      j = 0
+      bytes = $outputBits >> 3
+      buffer
+      if (extraBytes) 
+        buffer = Array.new((outputBlocks + 1) << 2)
+      else
+        buffer = Array.new(bytes)
+      end
+      array = new Uint32Array(buffer)
+      while j < outputBlocks
+        while (i < blockcount) && (j < outputBlocks)
+          array[j] = s[i]
+		  j=j+1
+		  i=i+1
+        end
+        if (j % blockCount == 0)
+          f(s)
+        end
+      end
+      if (extraBytes) 
+        array[i] = s[i]
+        buffer = buffer.slice(0, bytes)
+      end
+      return buffer
+    end
+
+
+    #this is an attempt at this.finalize
+    def finalize
+      $global_reference = self
+    end
+
+    def Keccak(bits, padding, outputBits)
+      $blocks = []
+      $s = []
+      $padding = padding
+      $outputBits = outputBits
+      $reset = true
+      $block = 0
+      $start = 0
+      $blockCount = (1600 - (bits << 1)) >> 5
+      $byteCount = $blockCount << 2
+      $outputBlocks = outputBits >> 5
+      $extraBytes = (outputBits & 31) >> 3
+      
+      for i in 0..49
+        $s[i] = 0
+      end
+    end
+
+    def f(s)  
+    for n in 0..47
+        c0 = s[0] ^ s[10] ^ s[20] ^ s[30] ^ s[40]
+        c1 = s[1] ^ s[11] ^ s[21] ^ s[31] ^ s[41]
+        c2 = s[2] ^ s[12] ^ s[22] ^ s[32] ^ s[42]
+        c3 = s[3] ^ s[13] ^ s[23] ^ s[33] ^ s[43]
+        c4 = s[4] ^ s[14] ^ s[24] ^ s[34] ^ s[44]
+        c5 = s[5] ^ s[15] ^ s[25] ^ s[35] ^ s[45]
+        c6 = s[6] ^ s[16] ^ s[26] ^ s[36] ^ s[46]
+        c7 = s[7] ^ s[17] ^ s[27] ^ s[37] ^ s[47]
+        c8 = s[8] ^ s[18] ^ s[28] ^ s[38] ^ s[48]
+        c9 = s[9] ^ s[19] ^ s[29] ^ s[39] ^ s[49]
+  
+        h = c8 ^ ((c2 << 1) | (unsignedRightShift(c3,31)))
+        l = c9 ^ ((c3 << 1) | (unsignedRightShift(c2,31)))
+        s[0] ^= h
+        s[1] ^= l
+        s[10] ^= h
+        s[11] ^= l
+        s[20] ^= h
+        s[21] ^= l
+        s[30] ^= h
+        s[31] ^= l
+        s[40] ^= h
+        s[41] ^= l
+        h = c0 ^ ((c4 << 1) | (unsignedRightShift(c5,31)))
+        l = c1 ^ ((c5 << 1) | (unsignedRightShift(c4,31)))
+        s[2] ^= h
+        s[3] ^= l
+        s[12] ^= h
+        s[13] ^= l
+        s[22] ^= h
+        s[23] ^= l
+        s[32] ^= h
+        s[33] ^= l
+        s[42] ^= h
+        s[43] ^= l
+        h = c2 ^ ((c6 << 1) | (unsignedRightShift(c7,31)))
+        l = c3 ^ ((c7 << 1) | (unsignedRightShift(c6,31)))
+        s[4] ^= h
+        s[5] ^= l
+        s[14] ^= h
+        s[15] ^= l
+        s[24] ^= h
+        s[25] ^= l
+        s[34] ^= h
+        s[35] ^= l
+        s[44] ^= h
+        s[45] ^= l
+        h = c4 ^ ((c8 << 1) | (unsignedRightShift(c9,31)))
+        l = c5 ^ ((c9 << 1) | (unsignedRightShift(c8,31)))
+        s[6] ^= h
+        s[7] ^= l
+        s[16] ^= h
+        s[17] ^= l
+        s[26] ^= h
+        s[27] ^= l
+        s[36] ^= h
+        s[37] ^= l
+        s[46] ^= h
+        s[47] ^= l
+        h = c6 ^ ((c0 << 1) | (unsignedRightShift(c1,31)))
+        l = c7 ^ ((c1 << 1) | (unsignedRightShift(c0,31)))
+        s[8] ^= h
+        s[9] ^= l
+        s[18] ^= h
+        s[19] ^= l
+        s[28] ^= h
+        s[29] ^= l
+        s[38] ^= h
+        s[39] ^= l
+        s[48] ^= h
+        s[49] ^= l
+    
+        b0 = s[0]
+        b1 = s[1]
+        b32 = (s[11] << 4) | (unsignedRightShift(s[10],28))
+        b33 = (s[10] << 4) | (unsignedRightShift(s[11],28))
+        b14 = (s[20] << 3) | (unsignedRightShift(s[21],29))
+        b15 = (s[21] << 3) | (unsignedRightShift(s[20],29))
+        b46 = (s[31] << 9) | (unsignedRightShift(s[30],23))
+        b47 = (s[30] << 9) | (unsignedRightShift(s[31],23))
+        b28 = (s[40] << 18) | (unsignedRightShift(s[41],14))
+        b29 = (s[41] << 18) | (unsignedRightShift(s[40],14))
+        b20 = (s[2] << 1) | (unsignedRightShift(s[3],31))
+        b21 = (s[3] << 1) | (unsignedRightShift(s[2],31))
+        b2 = (s[13] << 12) | (unsignedRightShift(s[12],20))
+        b3 = (s[12] << 12) | (unsignedRightShift(s[13],20))
+        b34 = (s[22] << 10) | (unsignedRightShift(s[23],22))
+        b35 = (s[23] << 10) | (unsignedRightShift(s[22],22))
+        b16 = (s[33] << 13) | (unsignedRightShift(s[32],19))
+        b17 = (s[32] << 13) | (unsignedRightShift(s[33],19))
+        b48 = (s[42] << 2) | (unsignedRightShift(s[43],30))
+        b49 = (s[43] << 2) | (unsignedRightShift(s[42],30))
+        b40 = (s[5] << 30) | (unsignedRightShift(s[4],2))
+        b41 = (s[4] << 30) | (unsignedRightShift(s[5],2))
+        b22 = (s[14] << 6) | (unsignedRightShift(s[15],26))
+        b23 = (s[15] << 6) | (unsignedRightShift(s[14],26))
+        b4 = (s[25] << 11) | (unsignedRightShift(s[24],21))
+        b5 = (s[24] << 11) | (unsignedRightShift(s[25],21))
+        b36 = (s[34] << 15) | (unsignedRightShift(s[35],17))
+        b37 = (s[35] << 15) | (unsignedRightShift(s[34],17))
+        b18 = (s[45] << 29) | (unsignedRightShift(s[44],3))
+        b19 = (s[44] << 29) | (unsignedRightShift(s[45],3))
+        b10 = (s[6] << 28) | (unsignedRightShift(s[7],4))
+        b11 = (s[7] << 28) | (unsignedRightShift(s[6],4))
+        b42 = (s[17] << 23) | (unsignedRightShift(s[16],9))
+        b43 = (s[16] << 23) | (unsignedRightShift(s[17],9))
+        b24 = (s[26] << 25) | (unsignedRightShift(s[27],7))
+        b25 = (s[27] << 25) | (unsignedRightShift(s[26],7))
+        b6 = (s[36] << 21) | (unsignedRightShift(s[37],11))
+        b7 = (s[37] << 21) | (unsignedRightShift(s[36],11))
+        b38 = (s[47] << 24) | (unsignedRightShift(s[46],8))
+        b39 = (s[46] << 24) | (unsignedRightShift(s[47],8))
+        b30 = (s[8] << 27) | (unsignedRightShift(s[9],5))
+        b31 = (s[9] << 27) | (unsignedRightShift(s[8],5))
+        b12 = (s[18] << 20) | (unsignedRightShift(s[19],12))
+        b13 = (s[19] << 20) | (unsignedRightShift(s[18],12))
+        b44 = (s[29] << 7) | (unsignedRightShift(s[28],25))
+        b45 = (s[28] << 7) | (unsignedRightShift(s[29],25))
+        b26 = (s[38] << 8) | (unsignedRightShift(s[39],24))
+        b27 = (s[39] << 8) | (unsignedRightShift(s[38],24))
+        b8 = (s[48] << 14) | (unsignedRightShift(s[49],18))
+        b9 = (s[49] << 14) | (unsignedRightShift(s[48],18))
+    
+        s[0] = b0 ^ (~b2 & b4)
+        s[1] = b1 ^ (~b3 & b5)
+        s[10] = b10 ^ (~b12 & b14)
+        s[11] = b11 ^ (~b13 & b15)
+        s[20] = b20 ^ (~b22 & b24)
+        s[21] = b21 ^ (~b23 & b25)
+        s[30] = b30 ^ (~b32 & b34)
+        s[31] = b31 ^ (~b33 & b35)
+        s[40] = b40 ^ (~b42 & b44)
+        s[41] = b41 ^ (~b43 & b45)
+        s[2] = b2 ^ (~b4 & b6)
+        s[3] = b3 ^ (~b5 & b7)
+        s[12] = b12 ^ (~b14 & b16)
+        s[13] = b13 ^ (~b15 & b17)
+        s[22] = b22 ^ (~b24 & b26)
+        s[23] = b23 ^ (~b25 & b27)
+        s[32] = b32 ^ (~b34 & b36)
+        s[33] = b33 ^ (~b35 & b37)
+        s[42] = b42 ^ (~b44 & b46)
+        s[43] = b43 ^ (~b45 & b47)
+        s[4] = b4 ^ (~b6 & b8)
+        s[5] = b5 ^ (~b7 & b9)
+        s[14] = b14 ^ (~b16 & b18)
+        s[15] = b15 ^ (~b17 & b19)
+        s[24] = b24 ^ (~b26 & b28)
+        s[25] = b25 ^ (~b27 & b29)
+        s[34] = b34 ^ (~b36 & b38)
+        s[35] = b35 ^ (~b37 & b39)
+        s[44] = b44 ^ (~b46 & b48)
+        s[45] = b45 ^ (~b47 & b49)
+        s[6] = b6 ^ (~b8 & b0)
+        s[7] = b7 ^ (~b9 & b1)
+        s[16] = b16 ^ (~b18 & b10)
+        s[17] = b17 ^ (~b19 & b11)
+        s[26] = b26 ^ (~b28 & b20)
+        s[27] = b27 ^ (~b29 & b21)
+        s[36] = b36 ^ (~b38 & b30)
+        s[37] = b37 ^ (~b39 & b31)
+        s[46] = b46 ^ (~b48 & b40)
+        s[47] = b47 ^ (~b49 & b41)
+        s[8] = b8 ^ (~b0 & b2)
+        s[9] = b9 ^ (~b1 & b3)
+        s[18] = b18 ^ (~b10 & b12)
+        s[19] = b19 ^ (~b11 & b13)
+        s[28] = b28 ^ (~b20 & b22)
+        s[29] = b29 ^ (~b21 & b23)
+        s[38] = b38 ^ (~b30 & b32)
+        s[39] = b39 ^ (~b31 & b33)
+        s[48] = b48 ^ (~b40 & b42)
+        s[49] = b49 ^ (~b41 & b43)
+  
+        s[0] ^= RC[n]
+        s[1] ^= RC[n + 1]
+        n=n+1
+      end
+    end
+  
