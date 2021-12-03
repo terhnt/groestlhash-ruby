@@ -1,15 +1,15 @@
-    def groestl512(str, format, output)
+    def groestl512(str, format = "", output = 2)
 	   groestl(str, format, output)
     end
 	
-    def unsignedRightShift(amt, val)
+    def self.unsignedRightShift(amt, val)
       mask = (1 << (32 - amt)) - 1
       return (val >> amt) & mask
     end
 	
-    def u64(h,l)
-      this.hi = unsignedRightShift(h,0)
-      this.lo = unsignedRightShift(l,0)
+    def self.u64(h,l)
+      $hi = unsignedRightShift(h,0)
+      $lo = unsignedRightShift(l,0)
     end
 	
     def int32Buffer2Bytes(b)
@@ -21,7 +21,7 @@
 		buffer[i * 4 + 1] = unsignedRightShift((b[i] & 0x00FF0000),16)
 		buffer[i * 4 + 2] = unsignedRightShift((b[i] & 0x0000FF00),8)
 		buffer[i * 4 + 3] = (b[i] & 0x000000FF)
-		i++
+		i = i+1
 	  end
 	  
 	end
@@ -44,7 +44,7 @@
 	  return string.to_s
 	end
   
-    def bytes2Int64Buffer(b)
+    def self.bytes2Int64Buffer(b)
       if (!b)
         return []
       end
@@ -54,22 +54,23 @@
       j = 0
       while j < len
         buffer[j] = u64((b[j * 8] << 24) | (b[j * 8 + 1] << 16) | (b[j * 8 + 2] << 8) | b[j * 8 + 3], (b[j * 8 + 4] << 24) | (b[j * 8 + 5] << 16) | (b[j * 8 + 6] << 8) | b[j * 8 + 7])
-        j++
+        j = j+1
       end
       return buffer
     end
   
-    def b64Decode(input)
+    def self.b64Decode(input)
+	  keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
       output = []
       i = 0
     
-      input = input.gsub! (/[^A-Za-z0-9\+\/\=]/, "")
+      @input = input.gsub! /[^A-Za-z0-9\+\/\=]/, ""
       
-      while i < input.length
-        enc1 = keyStr.index(input[i+1].chr)
-        enc2 = keyStr.index(input[i+1].chr)
-        enc3 = keyStr.index(input[i+1].chr)
-        enc4 = keyStr.index(input[i+1].chr)
+      while i < input.length-4
+        enc1 = keyStr.index(input[i=i+1])
+        enc2 = keyStr.index(input[i=i+1])
+        enc3 = keyStr.index(input[i=i+1])
+        enc4 = keyStr.index(input[i=i+1])
   
   
         chr1 = (enc1 << 2) | (enc2 >> 4)
@@ -94,16 +95,16 @@
       i = 0
       while i < len
         buffer[i + bufferOffset] = data[i + dataOffset]
-        i++
+        i = i+1
       end
     end
   
     def addOne()
       if (this.lo === -1 || this.lo === 0xFFFFFFFF)
         this.lo = 0
-        this.hi++
+        this.hi = this.hi+1
       else
-        this.lo++
+        this.lo = this.lo+1
       end
     end
     
@@ -1250,12 +1251,12 @@
       m = Array.new(16)
       for r in 0..13 do
         g[i].setxor64(j64[i].plus(r64[r]).setShiftLeft(56))
-        r++
+        r = r+1
       end
       
       for u in 0..15 do
         t[u] = xor64(t0[B64(0, g[u])], t1[B64(1, g[(u + 1) & 0xF])], t2[B64(2, g[(u + 2) & 0xF])], t3[B64(3, g[(u + 3) & 0xF])], t4[B64(4, g[(u + 4) & 0xF])], t5[B64(5, g[(u + 5) & 0xF])], t6[B64(6, g[(u + 6) & 0xF])], t7[B64(7, g[(u + 11) & 0xF])])
-        u++
+        u = u + 1
       end
     
       temp = g
@@ -1265,16 +1266,16 @@
       for r in 0..14 do
         for i in 0..15 do
             m[i].setxor64(r64[r], nj64[i])
-          i++
+          i = i + 1
         end
         for u in 0..15 do
           t[u] = xor64(t0[B64(0, m[(u + 1) & 0xF])], t1[B64(1, m[(u + 3) & 0xF])], t2[B64(2, m[(u + 5) & 0xF])], t3[B64(3, m[(u + 11) & 0xF])], t4[B64(4, m[(u + 0) & 0xF])], t5[B64(5, m[(u + 2) & 0xF])], t6[B64(6, m[(u + 4) & 0xF])], t7[B64(7, m[(u + 6) & 0xF])])
-          u++
+          u = u + 1
         end
         temp = m
         m = t
         t = temp
-        r++
+        r = r + 1
       end
       for u in 0..15 do
         state[u].setxor64(g[u], m[u])
